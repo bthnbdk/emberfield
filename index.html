@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#16130f" />
+    <title>Emberfield</title>
+  </head>
+  <body>
+    <main id="app">
+      <canvas id="game-canvas" aria-label="Playable Three.js game canvas"></canvas>
+      <section id="hud" aria-live="polite">
+        <div class="hud-metric">
+          <span>HP</span>
+          <div class="bar-wrap">
+            <div id="hp-bar-fill"></div>
+            <strong id="hp-value">100/100</strong>
+          </div>
+        </div>
+        <div class="hud-metric">
+          <span>Wave</span>
+          <strong id="wave-value">1</strong>
+        </div>
+        <div class="hud-metric">
+          <span>Kills</span>
+          <strong id="kills-value">0</strong>
+        </div>
+        <div class="hud-metric">
+          <span>Time</span>
+          <strong id="timer-value">00:00</strong>
+        </div>
+        <div class="hud-metric xp-metric">
+          <span>Level <strong id="level-value">1</strong></span>
+          <div class="bar-wrap xp-wrap">
+            <div id="xp-bar-fill"></div>
+          </div>
+        </div>
+        <div id="status-line">Hold out. Auto-aim fires at the nearest cinder.</div>
+      </section>
+      <div id="levelup-panel" style="display: none">
+        <div id="levelup-title">LEVEL UP</div>
+        <div id="levelup-choices"></div>
+      </div>
+      <div id="overlay" style="display: none">GAME OVER — press R</div>
+      <div id="touch-controls" aria-hidden="true">
+        <div id="touch-stick">
+          <div id="touch-knob"></div>
+        </div>
+        <button id="dash-button" type="button">Fire</button>
+      </div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
