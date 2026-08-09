@@ -5,6 +5,8 @@ import { createRenderer, resizeRenderer } from '../core/Renderer';
 import { UPGRADES } from '../data/upgrades';
 import { SHOP_WEAPONS, STARTING_WEAPON, WEAPONS, type WeaponDefinition } from '../data/weapons';
 import { Enemy, type EnemyDefinition } from '../entities/Enemy';
+import { EnemyProjectile } from '../entities/EnemyProjectile';
+import { Orb } from '../entities/Orb';
 import { Pickup } from '../entities/Pickup';
 import { Player, type ArenaBounds } from '../entities/Player';
 import { Projectile } from '../entities/Projectile';
@@ -23,13 +25,19 @@ const ENEMY_DEFS: Record<string, EnemyDefinition> = {
   ember: { id: 'ember', name: 'Ember', maxHp: 8, speed: 4.2, damage: 6, radius: 0.38, color: '#f5a13b', xpValue: 1, goldValue: 1, scale: 0.85 },
   wisp: { id: 'wisp', name: 'Wisp', maxHp: 5, speed: 5.6, damage: 5, radius: 0.3, color: '#7fe0c8', xpValue: 2, goldValue: 2, scale: 0.7 },
   brute: { id: 'brute', name: 'Brute', maxHp: 60, speed: 1.55, damage: 16, radius: 0.85, color: '#8a3a2b', xpValue: 4, goldValue: 5, scale: 1.9 },
+  spitter: { id: 'spitter', name: 'Spitter', maxHp: 20, speed: 2.1, damage: 9, radius: 0.48, color: '#c77dff', xpValue: 3, goldValue: 3, scale: 1.1, ranged: true, range: 6.5, fireInterval: 2.4 },
   infernal: { id: 'infernal', name: 'Infernal Core', maxHp: 420, speed: 1.05, damage: 22, radius: 1.35, color: '#5a1220', xpValue: 25, goldValue: 30, scale: 3.1, boss: true },
 };
 
 const MAX_ENEMIES = 80;
 const MAX_PROJECTILES = 64;
 const MAX_PICKUPS = 60;
+const MAX_ENEMY_PROJECTILES = 40;
+const MAX_ORBS = 4;
 const BOSS_INTERVAL = 45;
+/** Wave number that ends the run with a victory. */
+const VICTORY_WAVE = 10;
+const BEST_KEY = 'emberfield.best';
 
 type GameState = 'playing' | 'levelup' | 'shop' | 'gameover' | 'victory';
 
@@ -42,6 +50,8 @@ export class Game {
   private readonly enemies: Enemy[] = [];
   private readonly projectiles: Projectile[] = [];
   private readonly pickups: Pickup[] = [];
+  private readonly enemyProjectiles: EnemyProjectile[] = [];
+  private readonly orbs: Orb[] = [];
   private readonly audio = new AudioSystem();
   private readonly hud = new Hud();
   private readonly cameraRig = new CameraRig(this.camera);
@@ -74,6 +84,10 @@ export class Game {
   private activeWeaponIndex = 0;
   private shopUpgradeCost = 25;
   private shopUpgradeCount = 0;
+  private bestTime = 0;
+  private bestKills = 0;
+  private bestWave = 0;
+  private readonly orbAngles = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
 
   private readonly spawnPos = new THREE.Vector3();
   private readonly dirVec = new THREE.Vector3();
@@ -116,11 +130,23 @@ export class Game {
       this.scene.add(pickup.mesh);
       this.scene.add(pickup.sprite);
     }
+    for (let i = 0; i < MAX_ENEMY_PROJECTILES; i += 1) {
+      const shot = new EnemyProjectile();
+      this.enemyProjectiles.push(shot);
+      this.scene.add(shot.mesh);
+    }
+    for (let i = 0; i < MAX_ORBS; i += 1) {
+      const orb = new Orb();
+      this.orbs.push(orb);
+      this.scene.add(orb.group);
+    }
 
+    this.loadBest();
     this.createScene();
     this.hud.setWave(1);
     this.hud.setGold(0);
     this.hud.setWeapon(this.activeWeapon.name);
+    this.hud.setBest(this.bestTime, this.bestKills, this.bestWave);
     this.cameraRig.snapTo(this.player.group.position);
     resizeRenderer(this.renderer, this.camera, this.tuning.maxDpr);
     this.installTestHooks();
@@ -143,6 +169,8 @@ export class Game {
     for (const enemy of this.enemies) enemy.dispose();
     for (const projectile of this.projectiles) projectile.dispose();
     for (const pickup of this.pickups) pickup.dispose();
+    for (const shot of this.enemyProjectiles) shot.dispose();
+    for (const orb of this.orbs) orb.dispose();
     this.player.dispose();
     this.particles.dispose();
     this.renderer.dispose();
@@ -163,12 +191,16 @@ export class Game {
 
     if (this.state === 'playing') {
       this.player.update(delta, animElapsed, this.input, this.tuning, ARENA);
+      this.handleDash();
       this.updateWaves(delta);
       this.updateEnemies(delta);
       this.updateAutoFire(delta);
       this.updateProjectiles(delta);
+      this.updateEnemyProjectiles(delta);
+      this.updateOrbs(delta);
       this.handleCollisions();
       this.updatePickups(delta);
+      this.checkVictory();
       if (this.pendingLevelUps > 0) this.openLevelUp();
       if (this.input.consumeWeaponSwitch() && this.ownedWeapons.length > 1) {
         this.cycleWeapon();
@@ -185,6 +217,11 @@ export class Game {
       if (this.input.consumeRetry()) this.resetRun();
     } else if (this.state === 'gameover' || this.state === 'victory') {
       if (this.input.consumeRetry()) this.resetRun();
+    }
+
+    if (this.input.consumeMute()) {
+      const muted = this.audio.toggleMute();
+      this.hud.setMute(muted);
     }
 
     this.cameraRig.update(delta, this.player.group.position, this.tuning.cameraLag);
@@ -212,6 +249,7 @@ export class Game {
     if (newWave !== this.waveNumber) {
       this.waveNumber = newWave;
       this.hud.setWave(this.waveNumber);
+      this.hud.showBanner(`Wave ${this.waveNumber}`, this.waveNumber >= 8);
       if (this.waveNumber > 1 && this.waveNumber % 3 === 0) {
         // Periodic shop restock window: open once per restock wave is player-initiated.
         this.shopUpgradeCost = 25 + this.waveNumber * 3;
@@ -235,8 +273,9 @@ export class Game {
 
   private pickEnemyDef(): EnemyDefinition {
     const roll = this.rng();
-    if (this.waveNumber >= 3 && roll < 0.16) return ENEMY_DEFS.wisp;
-    if (this.waveNumber >= 4 && roll < 0.3) return ENEMY_DEFS.brute;
+    if (this.waveNumber >= 3 && roll < 0.12) return ENEMY_DEFS.wisp;
+    if (this.waveNumber >= 3 && roll < 0.24) return ENEMY_DEFS.spitter;
+    if (this.waveNumber >= 4 && roll < 0.36) return ENEMY_DEFS.brute;
     if (roll < 0.35) return ENEMY_DEFS.ember;
     return ENEMY_DEFS.cinder;
   }
@@ -252,7 +291,12 @@ export class Game {
     else if (edge === 2) this.spawnPos.set(-ARENA.halfWidth - margin, 0.05, (this.rng() * 2 - 1) * ARENA.halfDepth);
     else this.spawnPos.set(ARENA.halfWidth + margin, 0.05, (this.rng() * 2 - 1) * ARENA.halfDepth);
 
-    enemy.spawn(this.pickEnemyDef(), this.spawnPos);
+    const def = { ...this.pickEnemyDef() };
+    // Wave scaling: HP and damage grow past wave 4 so later waves stay threatening.
+    const scale = 1 + Math.max(0, this.waveNumber - 4) * 0.14;
+    def.maxHp = Math.round(def.maxHp * scale);
+    def.damage = Math.round(def.damage * (1 + Math.max(0, this.waveNumber - 4) * 0.06));
+    enemy.spawn(def, this.spawnPos);
   }
 
   private spawnBoss(): void {
@@ -262,6 +306,7 @@ export class Game {
     boss.spawn(ENEMY_DEFS.infernal, this.spawnPos);
     this.bossActive = true;
     this.hud.setBossVisible(true, ENEMY_DEFS.infernal.name);
+    this.hud.showBanner('⚠ Infernal Core', true);
     this.audio.boss();
     // Telegraph ring so the player sees where it lands.
     this.particles.ring(new THREE.Vector3(0, 0.4, -ARENA.halfDepth - 2), '#ff6a4d', 30, 10, 0.7);
@@ -272,6 +317,17 @@ export class Game {
       if (!enemy.active) continue;
       enemy.update(delta, this.player.group.position);
       if (enemy.boss) this.hud.setBossHp(enemy.hp / ENEMY_DEFS.infernal.maxHp);
+      // Ranged enemies signal a shot; spawn an enemy projectile here.
+      if (enemy.onFire.fired) {
+        enemy.onFire.fired = false;
+        const shot = this.enemyProjectiles.find((p) => !p.active);
+        if (shot) {
+          const origin = enemy.group.position.clone().setY(0.7);
+          const dir = new THREE.Vector3(enemy.onFire.dirX, 0, enemy.onFire.dirZ);
+          shot.spawn(origin, dir, enemy.damage, 7);
+          this.audio.enemyShoot();
+        }
+      }
       this.targetVec.copy(enemy.group.position).sub(this.player.group.position);
       this.targetVec.y = 0;
       const rr = enemy.radius + this.player.radius;
@@ -372,6 +428,126 @@ export class Game {
     }
   }
 
+  /** Dash: trigger on input edge, emit VFX once, apply via player's impulse. */
+  private handleDash(): void {
+    if (!this.input.consumeDash()) return;
+    if (this.player.tryDash()) {
+      this.audio.dash();
+      this.particles.ring(this.player.group.position, '#f5ba49', 10, 4, 0.3);
+      this.cameraRig.addImpulse(0.06);
+    }
+  }
+
+  private updateEnemyProjectiles(delta: number): void {
+    for (const shot of this.enemyProjectiles) {
+      if (!shot.active) continue;
+      shot.update(delta);
+      // Hit the player (no friendly fire).
+      this.dirVec.copy(shot.mesh.position).sub(this.player.group.position);
+      this.dirVec.y = 0;
+      const rr = shot.radius + this.player.radius;
+      if (this.dirVec.lengthSq() <= rr * rr) {
+        this.player.takeDamage(shot.damage);
+        this.audio.hit();
+        this.particles.burst(this.player.group.position, 6, '#c77dff', 3, 0.4);
+        shot.despawn();
+      }
+    }
+  }
+
+  /** Orbiting embers: position around the player and damage enemies on contact. */
+  private updateOrbs(delta: number): void {
+    const count = this.activeOrbCount();
+    if (count === 0) return;
+    const weapon = this.activeWeapon;
+    const damage = weapon.damage * this.player.stats.get(weapon.scaleStat);
+    const center = this.player.group.position.clone().setY(0.75);
+    const radius = 2.3;
+    const now = performance.now();
+    for (let i = 0; i < this.orbs.length; i += 1) {
+      const orb = this.orbs[i];
+      if (i >= count) {
+        if (orb.active) orb.despawn();
+        continue;
+      }
+      if (!orb.active) orb.spawn(this.orbAngles[i], damage, radius, 0);
+      orb.update(delta, center);
+      // Contact damage vs enemies.
+      for (const enemy of this.enemies) {
+        if (!enemy.active) continue;
+        this.dirVec.copy(orb.group.position).sub(enemy.group.position);
+        this.dirVec.y = 0;
+        const rr = orb.radius + enemy.radius;
+        if (this.dirVec.lengthSq() <= rr * rr && orb.canHit(enemy, now)) {
+          orb.registerHit(enemy, now);
+          enemy.takeDamage(orb.damage);
+          this.particles.burst(enemy.group.position, 4, '#7fe0c8', 2.6, 0.3);
+          if (!enemy.active) {
+            this.kills += 1;
+            this.audio.kill();
+            this.pendingLevelUps += this.player.addXp(enemy.xpValue);
+            const gold = Math.round(enemy.goldValue * (1 + this.player.stats.get('goldBonus')));
+            this.dropGold(enemy.group.position, gold);
+            if (enemy.boss) {
+              this.bossActive = false;
+              this.hud.setBossVisible(false);
+              this.audio.bossDown();
+              this.particles.ring(enemy.group.position, '#ffd9a0', 36, 12, 1);
+              this.cameraRig.addImpulse(0.5);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private activeOrbCount(): number {
+    if (this.activeWeapon.kind === 'orb') {
+      return Math.min(MAX_ORBS, 1 + Math.max(0, Math.round(this.player.stats.get('projectileCount'))));
+    }
+    return 0;
+  }
+
+  /** Wave 10 reached = victory. */
+  private checkVictory(): void {
+    if (this.state === 'playing' && this.waveNumber >= VICTORY_WAVE && this.bossActive === false) {
+      this.state = 'victory';
+      this.audio.bossDown();
+      this.saveBest();
+      this.hud.showBanner('Victory!', true);
+    }
+  }
+
+  private loadBest(): void {
+    try {
+      const raw = localStorage.getItem(BEST_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { time: number; kills: number; wave: number };
+      this.bestTime = parsed.time ?? 0;
+      this.bestKills = parsed.kills ?? 0;
+      this.bestWave = parsed.wave ?? 0;
+    } catch {
+      this.bestTime = 0;
+      this.bestKills = 0;
+      this.bestWave = 0;
+    }
+  }
+
+  private saveBest(): void {
+    const isBetter = this.elapsed > this.bestTime || (this.elapsed === this.bestTime && this.kills > this.bestKills);
+    if (isBetter) {
+      this.bestTime = this.elapsed;
+      this.bestKills = this.kills;
+      this.bestWave = this.waveNumber;
+      try {
+        localStorage.setItem(BEST_KEY, JSON.stringify({ time: this.bestTime, kills: this.bestKills, wave: this.bestWave }));
+      } catch {
+        // Storage unavailable (private mode) — best run just won't persist.
+      }
+      this.hud.setBest(this.bestTime, this.bestKills, this.bestWave);
+    }
+  }
+
   private updatePickups(delta: number): void {
     const magnetRadius = 2.6;
     for (const pickup of this.pickups) {
@@ -432,6 +608,7 @@ export class Game {
     if (!this.player.alive && this.state === 'playing') {
       this.state = 'gameover';
       this.audio.gameOver();
+      this.saveBest();
     }
   }
 
@@ -673,9 +850,13 @@ export class Game {
       },
       setState: (name: string) => {
         if (name === 'active-play') this.resetRun();
-        else if (name === 'gameover') this.state = 'gameover';
-        else if (name === 'victory') this.state = 'victory';
-        else if (name === 'shop') this.openShop();
+        else if (name === 'gameover') {
+          this.state = 'gameover';
+          this.saveBest();
+        } else if (name === 'victory') {
+          this.state = 'victory';
+          this.saveBest();
+        } else if (name === 'shop') this.openShop();
         else console.warn(`Unknown test state: ${name}`);
       },
       setPausedForScreenshot: (paused: boolean) => {
@@ -718,6 +899,8 @@ export class Game {
     for (const enemy of this.enemies) enemy.despawn();
     for (const projectile of this.projectiles) projectile.despawn();
     for (const pickup of this.pickups) pickup.despawn();
+    for (const shot of this.enemyProjectiles) shot.despawn();
+    for (const orb of this.orbs) orb.despawn();
     this.hud.hideLevelUp();
     this.hud.hideShop();
     this.hud.setBossVisible(false);
@@ -764,6 +947,8 @@ export class Game {
         activeEnemies: this.enemies.filter((e) => e.active).length,
         activeProjectiles: this.projectiles.filter((p) => p.active).length,
         activePickups: this.pickups.filter((p) => p.active).length,
+        activeEnemyProjectiles: this.enemyProjectiles.filter((p) => p.active).length,
+        activeOrbs: this.orbs.filter((o) => o.active).length,
         bossActive: this.bossActive,
       },
       renderer: {

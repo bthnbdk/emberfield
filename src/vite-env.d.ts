@@ -20,6 +20,8 @@ interface ThreeGameDiagnostics {
     activeEnemies: number;
     activeProjectiles: number;
     activePickups: number;
+    activeEnemyProjectiles: number;
+    activeOrbs: number;
     bossActive: boolean;
   };
   renderer: {

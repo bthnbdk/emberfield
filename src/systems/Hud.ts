@@ -35,8 +35,33 @@ export class Hud {
   private shopBuy: ((kind: ShopItemKind, id: string | null) => void) | null = null;
   private statusFlashTimer = 0;
 
+  private readonly banner = this.getElement('#banner');
+  private readonly muteIndicator = this.getElement('#mute-indicator');
+  private readonly bestLine = this.getElement('#best-line');
+
   setWave(wave: number): void {
     this.waveValue.textContent = String(wave);
+  }
+
+  /** Big center banner for wave announcements / boss warnings. */
+  showBanner(text: string, boss = false): void {
+    this.banner.textContent = text;
+    this.banner.classList.toggle('boss', boss);
+    // Restart animation by re-adding the class after a forced reflow.
+    this.banner.classList.remove('show');
+    void this.banner.offsetWidth;
+    this.banner.classList.add('show');
+  }
+
+  setMute(muted: boolean): void {
+    this.muteIndicator.textContent = muted ? '🔇' : '🔊';
+    this.muteIndicator.classList.toggle('muted', muted);
+  }
+
+  setBest(time: number, kills: number, wave: number): void {
+    const minutes = Math.floor(time / 60).toString().padStart(2, '0');
+    const seconds = Math.floor(time % 60).toString().padStart(2, '0');
+    this.bestLine.textContent = `Best: ${minutes}:${seconds} · ${kills} kills · wave ${wave}`;
   }
 
   setGold(gold: number): void {

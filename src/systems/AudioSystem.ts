@@ -4,6 +4,13 @@ export class AudioSystem {
   private context: AudioContext | null = null;
   private unlocked = false;
   private lastShootAt = 0;
+  muted = false;
+
+  /** Toggle mute; returns the new muted state. */
+  toggleMute(): boolean {
+    this.muted = !this.muted;
+    return this.muted;
+  }
 
   constructor() {
     const unlock = () => {
@@ -37,6 +44,14 @@ export class AudioSystem {
 
   hit(): void {
     this.blip(140, 90, 0.12, 0.05, 'sawtooth');
+  }
+
+  enemyShoot(): void {
+    this.blip(520, 240, 0.14, 0.035, 'sawtooth');
+  }
+
+  dash(): void {
+    this.blip(180, 520, 0.16, 0.06, 'square');
   }
 
   kill(): void {
@@ -86,7 +101,7 @@ export class AudioSystem {
   }
 
   private blip(from: number, to: number, duration: number, volume: number, type: OscillatorType): void {
-    if (!this.context || this.context.state !== 'running') return;
+    if (!this.context || this.context.state !== 'running' || this.muted) return;
     const oscillator = this.context.createOscillator();
     const gain = this.context.createGain();
     const now = this.context.currentTime;

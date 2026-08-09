@@ -21,16 +21,20 @@ export class InputController {
   };
 
   private dashDown = false;
+  private dashQueued = false;
   private retryPressed = false;
   private retryConsumed = true;
   private weaponSwitchQueued = false;
   private shopQueued = false;
   private shopConsumed = true;
+  private muteQueued = false;
+  private muteConsumed = true;
 
   private readonly onKeyDown = (event: KeyboardEvent) => {
     this.keys.add(event.code);
     if (event.code === 'Space' || event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
       this.dashDown = true;
+      this.dashQueued = true;
     }
     if (event.code === 'KeyR') {
       this.retryPressed = true;
@@ -42,6 +46,10 @@ export class InputController {
     if (event.code === 'KeyB') {
       this.shopQueued = true;
       this.shopConsumed = false;
+    }
+    if (event.code === 'KeyM') {
+      this.muteQueued = true;
+      this.muteConsumed = false;
     }
     if (/^(Digit|Numpad)[1-3]$/.test(event.code)) {
       this.digitQueue.push(Number(event.code.slice(-1)) - 1);
@@ -89,6 +97,7 @@ export class InputController {
   private readonly onDashDown = (event: PointerEvent) => {
     event.preventDefault();
     this.dashDown = true;
+    this.dashQueued = true;
   };
 
   private readonly onDashUp = (event: PointerEvent) => {
@@ -143,6 +152,24 @@ export class InputController {
 
   isDashHeld(): boolean {
     return this.dashDown;
+  }
+
+  /** Edge-triggered dash intent (Space/Shift/touch). Consumed once per press. */
+  consumeDash(): boolean {
+    if (this.dashQueued) {
+      this.dashQueued = false;
+      return true;
+    }
+    return false;
+  }
+
+  /** Edge-triggered mute toggle (M). Returns true once per press. */
+  consumeMute(): boolean {
+    if (this.muteQueued && !this.muteConsumed) {
+      this.muteConsumed = true;
+      return true;
+    }
+    return false;
   }
 
   /** Edge-triggered weapon cycle (Q). Consumed once per press. */

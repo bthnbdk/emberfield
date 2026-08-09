@@ -15,6 +15,12 @@ export type EnemyDefinition = {
   scale: number;
   /** Bosses show a dedicated HUD bar. */
   boss?: boolean;
+  /** Ranged attackers stop at a distance and lob projectiles. */
+  ranged?: boolean;
+  /** Preferred engagement distance for ranged enemies. */
+  range?: number;
+  /** Seconds between ranged shots. */
+  fireInterval?: number;
 };
 
 /** Pooled enemy: chases the player, deals contact damage on a cooldown.
@@ -31,6 +37,13 @@ export class Enemy {
   goldValue = 1;
   boss = false;
   name = 'Cinder';
+  /** Ranged enemy state (reads definition at spawn). */
+  ranged = false;
+  range = 6;
+  fireInterval = 2.2;
+  /** Fired when a ranged enemy wants to shoot; consumed by the game layer. */
+  readonly onFire = { fired: false, dirX: 0, dirZ: 0 };
+  private rangedCooldown = 0;
 
   private readonly bodyGeometry = new THREE.CapsuleGeometry(0.32, 0.42, 4, 8);
   private readonly bodyMaterial = new THREE.MeshStandardMaterial({
@@ -75,6 +88,11 @@ export class Enemy {
     this.goldValue = definition.goldValue;
     this.boss = definition.boss ?? false;
     this.name = definition.name;
+    this.ranged = definition.ranged ?? false;
+    this.range = definition.range ?? 6;
+    this.fireInterval = definition.fireInterval ?? 2.2;
+    this.rangedCooldown = 0.8 + Math.random() * 0.6;
+    this.onFire.fired = false;
     this.group.position.copy(position);
     this.group.position.y = 0.05;
     this.group.scale.setScalar(definition.scale);
@@ -98,6 +116,7 @@ export class Enemy {
 
     this.attackCooldown = Math.max(0, this.attackCooldown - delta);
     this.hitFlashTimer = Math.max(0, this.hitFlashTimer - delta);
+    this.rangedCooldown = Math.max(0, this.rangedCooldown - delta);
 
     // Chase player on the XZ plane.
     this.target.copy(playerPos);
@@ -107,6 +126,22 @@ export class Enemy {
     const dist = this.dir.length();
     if (dist > 0.01) {
       this.dir.divideScalar(dist);
+    }
+
+    if (this.ranged) {
+      // Stop at preferred range, back off if too close, and lob projectiles.
+      if (dist > this.range) {
+        this.group.position.addScaledVector(this.dir, this.speed * delta);
+      } else if (dist < this.range * 0.55) {
+        this.group.position.addScaledVector(this.dir, -this.speed * 0.7 * delta);
+      }
+      if (dist <= this.range * 1.35 && this.rangedCooldown <= 0) {
+        this.rangedCooldown = this.fireInterval;
+        this.onFire.fired = true;
+        this.onFire.dirX = this.dir.x;
+        this.onFire.dirZ = this.dir.z;
+      }
+    } else if (dist > 0.01) {
       this.group.position.addScaledVector(this.dir, this.speed * delta);
     }
     if (dist > 0.1) {

@@ -8,23 +8,28 @@ A polished, playable Three.js survivor game — auto-aim, waves of cinders, gold
 
 **Controls**
 - `WASD` / arrows — move
+- `Space` / `Shift` — dash (i-frames + speed burst)
 - Auto-aim fires at the nearest enemy (no manual aiming needed)
 - `B` — open the shop (gold economy)
 - `Q` — swap weapons (after buying a second one)
+- `M` — toggle sound
 - `R` — retry after game over
-- Touch: virtual stick + Fire/Shop buttons on mobile
+- Touch: virtual stick + Fire (dash) / Shop buttons on mobile
 
 ## Features
 
-- **Survivor loop** — waves of cinders/embers/brutes/wisps scale over time
-- **Boss** — Infernal Core spawns every 45s with a dedicated HUD bar
+- **Survivor loop** — waves of cinders/embers/wisps/brutes/spitters scale over time
+- **Boss** — Infernal Core spawns every 45s with a dedicated HUD bar + warning banner
 - **XP & level-ups** — 8 weighted upgrades, 3 distinct choices per level
 - **Gold economy** — enemies drop gold, magnetized pickups; shop sells weapons + Power Surge upgrades
-- **3 weapons** — Ember Shot (starter), Cinder Lance (piercing), Nova Burst (ring)
-- **VFX** — pooled additive particle bursts, projectile trails, coin glow, screen shake
-- **Audio** — procedural Web Audio synth (no assets), all effects generated at runtime
+- **5 weapons** — Ember Shot (starter), Cinder Lance (piercing), Nova Burst (ring), Ember Orb (orbiters)
+- **Dash** — Space/Shift burst with i-frames and particle trail
+- **Ranged enemies** — Spitters lob projectiles; dodge or dash through them
+- **Victory run** — survive to wave 10; best run persists in localStorage
+- **VFX** — pooled additive particle bursts, projectile trails, coin glow, screen shake, wave banners
+- **Audio** — procedural Web Audio synth (no assets), all effects generated at runtime, mute toggle
 - **Responsive** — desktop + mobile touch controls, safe-area aware
-- **Performance** — object pooling everywhere (enemies, projectiles, pickups, particles); no allocation during combat; capped DPR
+- **Performance** — object pooling everywhere (enemies, projectiles, pickups, orbs, particles); no allocation during combat; capped DPR
 
 ## Tech
 

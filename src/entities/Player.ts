@@ -33,6 +33,11 @@ export class Player {
   level = 1;
   xp = 0;
   gold = 0;
+  /** Dash impulse active (multiplies speed + grants i-frames). */
+  dashTimer = 0;
+  dashCooldown = 0;
+  /** Events the game layer can react to (VFX/audio). */
+  readonly onDash = { fired: false };
 
   get maxHp(): number {
     return this.stats.get('maxHp');
@@ -85,6 +90,9 @@ export class Player {
     this.level = 1;
     this.xp = 0;
     this.gold = 0;
+    this.dashTimer = 0;
+    this.dashCooldown = 0;
+    this.onDash.fired = false;
     this.invulnerableTimer = 0;
     this.hitFlashTimer = 0;
     this.group.visible = true;
@@ -96,7 +104,7 @@ export class Player {
   }
 
   takeDamage(amount: number): void {
-    if (!this.alive || this.invulnerableTimer > 0) return;
+    if (!this.alive || this.invulnerableTimer > 0 || this.dashTimer > 0) return;
     this.hp = Math.max(0, this.hp - amount);
     this.invulnerableTimer = 0.6;
     this.hitFlashTimer = 0.18;
@@ -104,6 +112,15 @@ export class Player {
       this.alive = false;
       this.group.visible = false;
     }
+  }
+
+  /** Attempt a dash: resets the impulse, grants i-frames. Returns true if it fired. */
+  tryDash(): boolean {
+    if (!this.alive || this.dashCooldown > 0 || this.dashTimer > 0) return false;
+    this.dashTimer = 0.22;
+    this.dashCooldown = 2.2;
+    this.onDash.fired = true;
+    return true;
   }
 
   heal(amount: number): void {
@@ -151,13 +168,24 @@ export class Player {
     if (!this.alive) return;
     this.invulnerableTimer = Math.max(0, this.invulnerableTimer - delta);
     this.hitFlashTimer = Math.max(0, this.hitFlashTimer - delta);
+    this.dashTimer = Math.max(0, this.dashTimer - delta);
+    this.dashCooldown = Math.max(0, this.dashCooldown - delta);
 
     input.readMovement(this.move);
-    const speed = tuning.speed * this.stats.get('moveSpeed');
+    const baseSpeed = tuning.speed * this.stats.get('moveSpeed');
+    // Dash: burst speed along the current input direction (or keep momentum if idle).
+    const dashing = this.dashTimer > 0;
+    const speed = dashing ? baseSpeed * 3.2 : baseSpeed;
     this.targetVelocity.set(this.move.x, 0, this.move.y).multiplyScalar(speed);
+    if (dashing && this.move.lengthSq() < 0.001) {
+      // Idle dash: preserve the last non-zero direction so the burst has a vector.
+      if (this.velocity.lengthSq() > 0.01) {
+        this.targetVelocity.copy(this.velocity).setY(0).normalize().multiplyScalar(speed);
+      }
+    }
 
     const smoothing = 1 - Math.exp(-tuning.acceleration * delta);
-    this.velocity.lerp(this.targetVelocity, smoothing);
+    this.velocity.lerp(this.targetVelocity, dashing ? 0.35 : smoothing);
     this.group.position.addScaledVector(this.velocity, delta);
 
     this.group.position.x = THREE.MathUtils.clamp(this.group.position.x, -bounds.halfWidth + 0.8, bounds.halfWidth - 0.8);

@@ -1,7 +1,7 @@
 import type { StatId } from '../game/Stats';
 
 /** Weapon archetype: how the shot behaves in flight. */
-export type WeaponKind = 'bolt' | 'lance' | 'nova';
+export type WeaponKind = 'bolt' | 'lance' | 'nova' | 'orb';
 
 export interface WeaponDefinition {
   id: string;
@@ -75,11 +75,28 @@ export const WEAPONS: Record<string, WeaponDefinition> = {
     critMult: 1.8,
     scaleStat: 'damage',
   },
+  'ember-orb': {
+    id: 'ember-orb',
+    name: 'Ember Orb',
+    description: 'Orbiting embers that scorch enemies on contact.',
+    kind: 'orb',
+    price: 45,
+    damage: 10,
+    cooldown: 0,
+    count: 1,
+    pierce: 0,
+    spread: 0,
+    speed: 3.4,
+    color: '#7fe0c8',
+    critMult: 1.6,
+    scaleStat: 'damage',
+  },
 };
 
 export const SHOP_WEAPONS: WeaponDefinition[] = [
   WEAPONS['cinder-lance'],
   WEAPONS['nova-burst'],
+  WEAPONS['ember-orb'],
 ];
 
 export const STARTING_WEAPON = WEAPONS['ember-shot'];
