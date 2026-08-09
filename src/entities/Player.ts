@@ -18,6 +18,9 @@ const BASE_STATS = {
   projectileCount: 1,
   maxHp: 100,
   moveSpeed: 1,
+  critChance: 0.05,
+  pierce: 0,
+  goldBonus: 0,
 };
 
 export class Player {
@@ -29,6 +32,7 @@ export class Player {
   alive = true;
   level = 1;
   xp = 0;
+  gold = 0;
 
   get maxHp(): number {
     return this.stats.get('maxHp');
@@ -80,6 +84,7 @@ export class Player {
     this.alive = true;
     this.level = 1;
     this.xp = 0;
+    this.gold = 0;
     this.invulnerableTimer = 0;
     this.hitFlashTimer = 0;
     this.group.visible = true;
@@ -123,6 +128,23 @@ export class Player {
       levels += 1;
     }
     return levels;
+  }
+
+  addGold(amount: number): void {
+    this.gold += amount;
+  }
+
+  /** Returns true if the player can afford `cost` and it is deducted. */
+  spendGold(cost: number): boolean {
+    if (this.gold < cost) return false;
+    this.gold -= cost;
+    return true;
+  }
+
+  /** Roll a crit: returns the damage multiplier for this shot. */
+  rollCrit(): number {
+    const chance = Math.min(0.75, this.stats.get('critChance'));
+    return Math.random() < chance ? 2 : 1;
   }
 
   update(delta: number, elapsed: number, input: InputController, tuning: PlayerTuning, bounds: ArenaBounds): void {

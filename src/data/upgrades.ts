@@ -38,4 +38,25 @@ export const UPGRADES: UpgradeDefinition[] = [
     weight: 8,
     effects: [{ stat: 'moveSpeed', op: 'mult', value: 1.12 }],
   },
+  {
+    id: 'sharp-aim',
+    name: 'Sharp Aim',
+    description: '+10% crit chance',
+    weight: 7,
+    effects: [{ stat: 'critChance', op: 'add', value: 0.1 }],
+  },
+  {
+    id: 'piercing-core',
+    name: 'Piercing Core',
+    description: 'Shots pierce +1 enemy',
+    weight: 6,
+    effects: [{ stat: 'pierce', op: 'add', value: 1 }],
+  },
+  {
+    id: 'gold-finder',
+    name: 'Gold Finder',
+    description: '+50% gold from cinders',
+    weight: 6,
+    effects: [{ stat: 'goldBonus', op: 'add', value: 0.5 }],
+  },
 ];

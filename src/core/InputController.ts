@@ -23,6 +23,9 @@ export class InputController {
   private dashDown = false;
   private retryPressed = false;
   private retryConsumed = true;
+  private weaponSwitchQueued = false;
+  private shopQueued = false;
+  private shopConsumed = true;
 
   private readonly onKeyDown = (event: KeyboardEvent) => {
     this.keys.add(event.code);
@@ -32,6 +35,13 @@ export class InputController {
     if (event.code === 'KeyR') {
       this.retryPressed = true;
       this.retryConsumed = false;
+    }
+    if (event.code === 'KeyQ') {
+      this.weaponSwitchQueued = true;
+    }
+    if (event.code === 'KeyB') {
+      this.shopQueued = true;
+      this.shopConsumed = false;
     }
     if (/^(Digit|Numpad)[1-3]$/.test(event.code)) {
       this.digitQueue.push(Number(event.code.slice(-1)) - 1);
@@ -90,6 +100,7 @@ export class InputController {
     private readonly stick: HTMLElement,
     private readonly knob: HTMLElement,
     private readonly dashButton: HTMLElement,
+    private readonly shopButton: HTMLElement | null = null,
   ) {
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
@@ -101,7 +112,22 @@ export class InputController {
     this.dashButton.addEventListener('pointerup', this.onDashUp);
     this.dashButton.addEventListener('pointercancel', this.onDashUp);
     this.dashButton.addEventListener('pointerleave', this.onDashUp);
+    if (this.shopButton) {
+      this.shopButton.addEventListener('pointerdown', this.onShopDown);
+      this.shopButton.addEventListener('pointerup', this.onShopUp);
+      this.shopButton.addEventListener('pointercancel', this.onShopUp);
+    }
   }
+
+  private readonly onShopDown = (event: PointerEvent) => {
+    event.preventDefault();
+    this.shopQueued = true;
+    this.shopConsumed = false;
+  };
+
+  private readonly onShopUp = (event: PointerEvent) => {
+    event.preventDefault();
+  };
 
   readMovement(target: THREE.Vector2): THREE.Vector2 {
     this.keyVector.set(0, 0);
@@ -117,6 +143,24 @@ export class InputController {
 
   isDashHeld(): boolean {
     return this.dashDown;
+  }
+
+  /** Edge-triggered weapon cycle (Q). Consumed once per press. */
+  consumeWeaponSwitch(): boolean {
+    if (this.weaponSwitchQueued) {
+      this.weaponSwitchQueued = false;
+      return true;
+    }
+    return false;
+  }
+
+  /** Edge-triggered shop open (B). Returns true once per press. */
+  consumeShopOpen(): boolean {
+    if (this.shopQueued && !this.shopConsumed) {
+      this.shopConsumed = true;
+      return true;
+    }
+    return false;
   }
 
   /** Edge-triggered retry intent (R key). Returns true once per press. */
@@ -146,6 +190,11 @@ export class InputController {
     this.dashButton.removeEventListener('pointerup', this.onDashUp);
     this.dashButton.removeEventListener('pointercancel', this.onDashUp);
     this.dashButton.removeEventListener('pointerleave', this.onDashUp);
+    if (this.shopButton) {
+      this.shopButton.removeEventListener('pointerdown', this.onShopDown);
+      this.shopButton.removeEventListener('pointerup', this.onShopUp);
+      this.shopButton.removeEventListener('pointercancel', this.onShopUp);
+    }
   }
 
   private updatePointer(clientX: number, clientY: number): void {

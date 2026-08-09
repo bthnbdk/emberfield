@@ -9,9 +9,16 @@ export type EnemyDefinition = {
   radius: number;
   color: string;
   xpValue: number;
+  /** Gold dropped on death. */
+  goldValue: number;
+  /** Visual scale multiplier (bosses/brutes are bigger). */
+  scale: number;
+  /** Bosses show a dedicated HUD bar. */
+  boss?: boolean;
 };
 
-/** Simple pooled enemy: chases the player, deals contact damage on a cooldown. */
+/** Pooled enemy: chases the player, deals contact damage on a cooldown.
+ *  Supports mixed sizes (wisp/brute/boss) via per-spawn scale. */
 export class Enemy {
   readonly group = new THREE.Group();
   readonly mesh: THREE.Mesh;
@@ -21,12 +28,23 @@ export class Enemy {
   damage = 8;
   radius = 0.45;
   xpValue = 1;
+  goldValue = 1;
+  boss = false;
+  name = 'Cinder';
 
   private readonly bodyGeometry = new THREE.CapsuleGeometry(0.32, 0.42, 4, 8);
   private readonly bodyMaterial = new THREE.MeshStandardMaterial({
     roughness: 0.6,
     metalness: 0.05,
   });
+  private readonly eyeMaterial = new THREE.MeshStandardMaterial({
+    color: '#ffe9c9',
+    emissive: '#ff9d3f',
+    emissiveIntensity: 1.1,
+    roughness: 0.3,
+  });
+  private readonly eyeGeometry = new THREE.SphereGeometry(0.09, 6, 6);
+  private readonly eye: THREE.Mesh;
   private readonly target = new THREE.Vector3();
   private readonly dir = new THREE.Vector3();
   private attackCooldown = 0;
@@ -38,6 +56,12 @@ export class Enemy {
     this.mesh.castShadow = true;
     this.mesh.position.y = 0.5;
     this.group.add(this.mesh);
+
+    // Single glowing eye so enemies read as "alive" even at small sizes.
+    this.eye = new THREE.Mesh(this.eyeGeometry, this.eyeMaterial);
+    this.eye.position.set(0, 0.5, 0.3);
+    this.group.add(this.eye);
+
     this.group.visible = false;
   }
 
@@ -48,8 +72,12 @@ export class Enemy {
     this.damage = definition.damage;
     this.radius = definition.radius;
     this.xpValue = definition.xpValue;
+    this.goldValue = definition.goldValue;
+    this.boss = definition.boss ?? false;
+    this.name = definition.name;
     this.group.position.copy(position);
     this.group.position.y = 0.05;
+    this.group.scale.setScalar(definition.scale);
     this.group.visible = true;
     this.active = true;
     this.attackCooldown = 0;
@@ -101,7 +129,7 @@ export class Enemy {
   /** Call when the enemy has finished attacking (reset cooldown). */
   tryAttack(): boolean {
     if (this.attackCooldown > 0) return false;
-    this.attackCooldown = 0.8;
+    this.attackCooldown = this.boss ? 1.1 : 0.8;
     return true;
   }
 
@@ -113,5 +141,7 @@ export class Enemy {
   dispose(): void {
     this.bodyGeometry.dispose();
     this.bodyMaterial.dispose();
+    this.eyeGeometry.dispose();
+    this.eyeMaterial.dispose();
   }
 }

@@ -218,6 +218,215 @@ body {
   font-size: 0.78rem;
 }
 
+.weapon-metric {
+  min-width: 118px;
+}
+
+#boss-bar {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: 50%;
+  width: min(420px, 70vw);
+  transform: translateX(-50%);
+  color: #f6f1df;
+  text-align: center;
+  z-index: 4;
+  pointer-events: none;
+}
+
+#boss-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ff8f5a;
+  text-shadow: 0 0 14px rgba(255, 143, 90, 0.6);
+}
+
+.boss-track {
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 143, 90, 0.45);
+  background: rgba(10, 8, 6, 0.6);
+}
+
+#boss-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #d94f35, #ff6a4d, #ff8f5a);
+  transition: width 0.12s linear;
+}
+
+#shop-panel {
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: flex-start;
+  flex-direction: column;
+  gap: 14px;
+  padding: max(24px, env(safe-area-inset-top)) 18px 24px;
+  color: #f6f1df;
+  background: rgba(10, 8, 6, 0.78);
+  backdrop-filter: blur(6px);
+  z-index: 6;
+  overflow-y: auto;
+}
+
+#shop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(460px, 92vw);
+}
+
+#shop-title {
+  font-size: clamp(1.3rem, 4vw, 2rem);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f5ba49;
+  text-shadow: 0 0 24px rgba(245, 186, 73, 0.4);
+}
+
+#shop-close {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(246, 241, 223, 0.3);
+  border-radius: 50%;
+  color: #f6f1df;
+  background: rgba(22, 19, 15, 0.9);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+#shop-close:hover,
+#shop-close:focus-visible {
+  border-color: rgba(127, 224, 200, 0.7);
+}
+
+#shop-gold {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #f5ba49;
+}
+
+#shop-weapons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(460px, 92vw);
+}
+
+.shop-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 18px;
+  border: 1px solid rgba(246, 241, 223, 0.28);
+  border-left: 4px solid #48baa7;
+  color: #f6f1df;
+  background: rgba(22, 19, 15, 0.92);
+  font-family: inherit;
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.1s ease-out, border-color 0.1s ease-out, background 0.1s ease-out;
+}
+
+.shop-card:hover:not(:disabled),
+.shop-card:focus-visible:not(:disabled) {
+  border-left-color: #7fe0c8;
+  border-color: rgba(127, 224, 200, 0.6);
+  background: rgba(38, 32, 26, 0.95);
+  transform: translateX(4px);
+}
+
+.shop-card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.shop-card strong {
+  color: #f5ba49;
+  font-size: 1.05rem;
+}
+
+.shop-card span {
+  color: rgba(246, 241, 223, 0.78);
+  font-size: 0.88rem;
+}
+
+.shop-card em {
+  align-self: flex-end;
+  margin-top: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: #111312;
+  background: #f5ba49;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
+.shop-none {
+  padding: 18px;
+  color: rgba(246, 241, 223, 0.7);
+  text-align: center;
+  border: 1px dashed rgba(246, 241, 223, 0.25);
+}
+
+#shop-upgrade-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 18px;
+  border: 1px solid rgba(246, 241, 223, 0.28);
+  border-left: 4px solid #7fe0c8;
+  color: #f6f1df;
+  background: rgba(22, 19, 15, 0.92);
+  font-family: inherit;
+  font-size: 1rem;
+  text-align: left;
+  width: min(460px, 92vw);
+  cursor: pointer;
+  transition: transform 0.1s ease-out, border-color 0.1s ease-out, background 0.1s ease-out;
+}
+
+#shop-upgrade-btn:hover:not(:disabled),
+#shop-upgrade-btn:focus-visible:not(:disabled) {
+  border-color: rgba(127, 224, 200, 0.6);
+  background: rgba(38, 32, 26, 0.95);
+  transform: translateX(4px);
+}
+
+#shop-upgrade-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+#shop-upgrade-btn strong {
+  color: #7fe0c8;
+}
+
+#shop-upgrade-btn span {
+  color: rgba(246, 241, 223, 0.78);
+  font-size: 0.88rem;
+}
+
+#shop-upgrade-btn em {
+  align-self: flex-end;
+  margin-top: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: #111312;
+  background: #7fe0c8;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
 #touch-controls {
   position: absolute;
   right: max(18px, env(safe-area-inset-right));
@@ -227,6 +436,25 @@ body {
   justify-content: space-between;
   align-items: flex-end;
   pointer-events: none;
+}
+
+#touch-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+#shop-button {
+  min-width: 72px;
+  padding: 10px 14px;
+  border: 1px solid rgba(246, 241, 223, 0.3);
+  border-radius: 999px;
+  color: #111312;
+  background: #f5ba49;
+  font-weight: 800;
+  pointer-events: auto;
+  touch-action: none;
 }
 
 #touch-stick {

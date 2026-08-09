@@ -49,6 +49,40 @@ export class AudioSystem {
 
   levelUp(): void {
     this.blip(420, 880, 0.18, 0.06, 'triangle');
+    this.blip(560, 1120, 0.16, 0.04, 'triangle');
+  }
+
+  pickup(): void {
+    this.blip(880, 1320, 0.07, 0.03, 'sine');
+  }
+
+  weaponSwitch(): void {
+    this.blip(240, 480, 0.12, 0.05, 'square');
+  }
+
+  shopOpen(): void {
+    this.blip(300, 600, 0.2, 0.05, 'triangle');
+    this.blip(450, 900, 0.18, 0.04, 'triangle');
+  }
+
+  buy(): void {
+    this.blip(520, 1040, 0.14, 0.06, 'triangle');
+    this.blip(780, 1560, 0.18, 0.05, 'triangle');
+  }
+
+  error(): void {
+    this.blip(180, 90, 0.16, 0.06, 'sawtooth');
+  }
+
+  boss(): void {
+    this.blip(110, 55, 0.7, 0.1, 'sawtooth');
+    this.blip(160, 80, 0.7, 0.08, 'sawtooth');
+  }
+
+  bossDown(): void {
+    this.blip(220, 440, 0.25, 0.08, 'triangle');
+    this.blip(330, 660, 0.3, 0.07, 'triangle');
+    this.blip(440, 880, 0.4, 0.06, 'triangle');
   }
 
   private blip(from: number, to: number, duration: number, volume: number, type: OscillatorType): void {

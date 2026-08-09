@@ -9,6 +9,9 @@ interface ThreeGameDiagnostics {
   hp: number;
   level: number;
   xp: number;
+  gold: number;
+  weapon: string;
+  weapons: string[];
   player: {
     position: { x: number; y: number; z: number };
     speed: number;
@@ -16,6 +19,8 @@ interface ThreeGameDiagnostics {
   entities: {
     activeEnemies: number;
     activeProjectiles: number;
+    activePickups: number;
+    bossActive: boolean;
   };
   renderer: {
     calls: number;
@@ -35,7 +40,7 @@ interface ThreeGameDiagnostics {
 interface ThreeGameTestHooks {
   /** Re-seed the game RNG; all gameplay randomness must flow through it. */
   seed(value: number): void;
-  /** Jump to a named state for baselines ('active-play' | 'gameover' | 'victory'). */
+  /** Jump to a named state for baselines ('active-play' | 'gameover' | 'victory' | 'shop'). */
   setState(name: string): void;
   /** Freeze the simulation while continuing to render the current frame. */
   setPausedForScreenshot(paused: boolean): void;
@@ -43,6 +48,12 @@ interface ThreeGameTestHooks {
   setReducedMotion(enabled: boolean): void;
   /** Hide debug UI (lil-gui) before capturing. */
   hideDebugUi(hidden: boolean): void;
+  /** Grant a weapon without gold (QA helper). */
+  buyWeapon(id: string): void;
+  /** Grant gold (QA helper). */
+  addGold(amount: number): void;
+  /** Force a boss spawn immediately (QA helper). */
+  spawnBossNow(): void;
 }
 
 interface Window {

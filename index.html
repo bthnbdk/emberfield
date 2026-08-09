@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#16130f" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23f5ba49'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23d94f35'/%3E%3C/svg%3E" />
     <title>Emberfield</title>
   </head>
   <body>
@@ -29,6 +30,14 @@
           <span>Time</span>
           <strong id="timer-value">00:00</strong>
         </div>
+        <div class="hud-metric">
+          <span>Gold</span>
+          <strong id="gold-value">0</strong>
+        </div>
+        <div class="hud-metric weapon-metric">
+          <span>Weapon</span>
+          <strong id="weapon-value">Ember Shot</strong>
+        </div>
         <div class="hud-metric xp-metric">
           <span>Level <strong id="level-value">1</strong></span>
           <div class="bar-wrap xp-wrap">
@@ -37,16 +46,36 @@
         </div>
         <div id="status-line">Hold out. Auto-aim fires at the nearest cinder.</div>
       </section>
+      <div id="boss-bar" style="display: none">
+        <span id="boss-label">Infernal Core</span>
+        <div class="boss-track"><div id="boss-bar-fill"></div></div>
+      </div>
       <div id="levelup-panel" style="display: none">
         <div id="levelup-title">LEVEL UP</div>
         <div id="levelup-choices"></div>
+      </div>
+      <div id="shop-panel" style="display: none">
+        <div id="shop-header">
+          <div id="shop-title">SHOP</div>
+          <button id="shop-close" type="button" aria-label="Close shop">✕</button>
+        </div>
+        <div id="shop-gold">Gold: 0</div>
+        <div id="shop-weapons"></div>
+        <button id="shop-upgrade-btn" type="button">
+          <strong>Power Surge</strong>
+          <span>+12% damage, +20 HP</span>
+          <em id="shop-upgrade-cost">25g</em>
+        </button>
       </div>
       <div id="overlay" style="display: none">GAME OVER — press R</div>
       <div id="touch-controls" aria-hidden="true">
         <div id="touch-stick">
           <div id="touch-knob"></div>
         </div>
-        <button id="dash-button" type="button">Fire</button>
+        <div id="touch-buttons">
+          <button id="shop-button" type="button">Shop</button>
+          <button id="dash-button" type="button">Fire</button>
+        </div>
       </div>
     </main>
     <script type="module" src="/src/main.ts"></script>

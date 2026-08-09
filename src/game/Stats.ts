@@ -1,7 +1,15 @@
 /** Data-driven stat block. Upgrades are defined as data (StatEffect[]),
  *  not as switch statements, so new upgrades need zero engine changes. */
 
-export type StatId = 'damage' | 'attackSpeed' | 'projectileCount' | 'maxHp' | 'moveSpeed';
+export type StatId =
+  | 'damage'
+  | 'attackSpeed'
+  | 'projectileCount'
+  | 'maxHp'
+  | 'moveSpeed'
+  | 'critChance'
+  | 'pierce'
+  | 'goldBonus';
 
 export type StatOp = 'add' | 'mult' | 'set';
 
@@ -27,6 +35,9 @@ const DEFAULT_ADD: Record<StatId, number> = {
   projectileCount: 0,
   maxHp: 0,
   moveSpeed: 0,
+  critChance: 0,
+  pierce: 0,
+  goldBonus: 0,
 };
 
 const DEFAULT_MULT: Record<StatId, number> = {
@@ -35,6 +46,9 @@ const DEFAULT_MULT: Record<StatId, number> = {
   projectileCount: 1,
   maxHp: 1,
   moveSpeed: 1,
+  critChance: 1,
+  pierce: 1,
+  goldBonus: 1,
 };
 
 export class StatBlock {
